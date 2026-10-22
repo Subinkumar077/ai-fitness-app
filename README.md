@@ -1,78 +1,335 @@
-This is the Official repository of **Java Spring Boot AI Full Stack Microservices Course: Building Fitness Application**
+# AI Fitness App
 
-# The Ultimate Java and Spring Boot Mastery Roadmap
+AI Fitness App is a full-stack fitness tracking platform built with Spring Boot microservices and a React frontend. Users authenticate with OAuth2/Keycloak, record activities, review their activity history, and receive AI-generated recommendations based on their fitness data.
 
-Welcome to your one-stop-shop for mastering Java and Spring Boot! This repository offers a comprehensive learning experience with high-quality resources and community support. Dive into over 150+ hours of premium content, with everything you need to excel at Java and Spring Boot development.
+## Features
 
-## 🎓 Learning Roadmap
+- OAuth2 Authorization Code with PKCE authentication through Keycloak
+- API gateway with JWT validation, CORS configuration, and service routing
+- User registration and profile lookup
+- Fitness activity tracking and activity history
+- AI recommendations generated from activity events
+- Service discovery with Netflix Eureka
+- Centralized configuration with Spring Cloud Config Server
+- PostgreSQL persistence for users
+- MongoDB persistence for activities and recommendations
+- RabbitMQ messaging between the activity and AI services
+- React UI built with Vite, Material UI, Redux Toolkit, and Axios
 
-Most of the courses below are available in **Udemy For Business**, so if you have subscription - you can get FREE access.
-Here’s a structured path to enhance your skills with detailed courses available:
+## Architecture
 
-1. **[Spring Boot By Building Complex Projects Step by Step](https://link.embarkx.com/spring-boot) (85+ Hours of Content)**
-2. **[Master Spring Boot Microservices by Building eCommerce Project](https://link.embarkx.com/microservices) (55+ Hours of Content)**
-3. **[Learn Java with 60+ Hours of Content](http://link.embarkx.com/java) (60+ Hours of Content)**
-4. **[Master Spring Security with React JS + OAuth2](https://link.embarkx.com/spring-security) (34+ Hours of Content)**
-5. **[Master IntelliJ IDEA](http://link.embarkx.com/intellij) (3+ Hours of Content)**
+```text
+                            +----------------------+
+                            |  React/Vite frontend  |
+                            |    localhost:5173     |
+                            +----------+-----------+
+                                       |
+                              OAuth2 + REST /api
+                                       |
+                            +----------v-----------+
+                            |     API Gateway      |
+                            |    localhost:8080    |
+                            +----+---------+-------+
+                                 |         |
+                       Eureka LB |         | Eureka LB
+                                 |         |
+              +------------------v-+     +-v------------------+
+              |   User Service     |     | Activity Service   |
+              |   localhost:8081   |     |   localhost:8082   |
+              |   PostgreSQL       |     |   MongoDB           |
+              +--------------------+     +---------+-----------+
+                                                    |
+                                             RabbitMQ events
+                                                    |
+                                           +--------v---------+
+                                           |    AI Service    |
+                                           |   localhost:8083 |
+                                           |   MongoDB/Gemini |
+                                           +------------------+
 
+       Config Server: localhost:8888       Eureka: localhost:8761
+       Keycloak:      localhost:8181        PostgreSQL: localhost:5432
+       MongoDB:       localhost:27017       RabbitMQ: localhost:5672
+```
 
-## 🌟 With All Our Courses You Gain Access To
+### Services
 
-- 📝 **Notes:** Detailed and downloadable notes to accompany each lesson.
-- 💻 **Source Code:** Full access to the source code used in the tutorials.
-- 🤔 **Doubt Solving:** Responsive instructor and community support.
-- 🎥 **High-Quality HD Videos:** Easy to understand, high-definition video tutorials.
-- 🔄 **Free Lifetime Updates:** Continuous updates to course content at no extra cost.
+| Module | Port | Responsibility |
+| --- | ---: | --- |
+| `eureka` | `8761` | Service registry and discovery |
+| `configserver` | `8888` | Loads shared configuration from `configserver/src/main/resources/config` |
+| `gateway` | `8080` | JWT-protected entry point and route forwarding |
+| `userservice` | `8081` | User registration, profile lookup, and validation |
+| `activityservice` | `8082` | Stores and retrieves fitness activities |
+| `aiservice` | `8083` | Consumes activity events and serves AI recommendations |
+| `fitness-app-frontend` | `5173` | Browser client |
 
-## 📚 Why Choose This Mastery Series?
+## Technology Stack
 
-With this series, you're not just learning; you're preparing to dominate the field of Java and Spring Boot development. Our structured learning path ensures that you build your skills progressively, with each course designed to build on the knowledge gained from the previous one.
+### Backend
 
-### Join Us Now!
+- Java 17
+- Spring Boot
+- Spring Cloud Config
+- Spring Cloud Gateway
+- Spring Cloud Netflix Eureka
+- Spring Security OAuth2 Resource Server
+- Spring Data JPA
+- Spring Data MongoDB
+- Spring AMQP/RabbitMQ
+- PostgreSQL
+- MongoDB
+- Maven
 
-Start your journey today to become a master at Java and Spring Boot. Our community and expert instructors are here to support your learning every step of the way. **Enroll and start building your future, today!**
+### Frontend
 
+- React 19
+- Vite
+- React Router
+- Material UI
+- Redux Toolkit
+- Axios
+- `react-oauth2-code-pkce`
 
+## Repository Structure
 
+```text
+.
+├── activityservice/       Activity REST API and RabbitMQ publisher
+├── aiservice/             Recommendation API, event listener, and Gemini integration
+├── configserver/          Spring Cloud Config Server and service configuration
+├── eureka/                Eureka service registry
+├── gateway/               API gateway and JWT security configuration
+├── userservice/           User REST API and PostgreSQL persistence
+└── fitness-app-frontend/  React/Vite web application
+```
 
+## Prerequisites
 
-# Usage Policy for Course Materials
+Install the following before starting the application:
 
-## Instructor Information
+- JDK 17
+- Node.js and npm
+- PostgreSQL
+- MongoDB
+- RabbitMQ
+- Keycloak
+- A Gemini API key
 
-**Instructor:** Faisal Memon  
-**Company:** [EmbarkX.com](http://www.embarkx.com)
+The default configuration expects the supporting services to run locally:
 
-## Policy Overview
+| Dependency | Default address |
+| --- | --- |
+| PostgreSQL | `localhost:5432` |
+| MongoDB | `localhost:27017` |
+| RabbitMQ | `localhost:5672` |
+| Keycloak | `localhost:8181` |
 
-This document outlines the guidelines and restrictions concerning the use of course materials provided by EmbarkX, including but not limited to PDF presentations, code samples, and video tutorials.
+## Configuration
 
-### 1. Personal Use Only
+The Config Server uses the native profile and reads YAML files from:
 
-The materials provided in this course are intended for **your personal use only**. They are to be used solely for the purpose of learning and completing this course.
+```text
+configserver/src/main/resources/config/
+```
 
-### 2. No Unauthorized Sharing or Distribution
+The checked-in configuration is intended for local development. Before deploying, replace local credentials and URLs with environment-specific values.
 
-You are **not permitted** to share, distribute, or publicly post any course materials on any websites, social media platforms, or other public forums without prior written consent from the instructor.
+### PostgreSQL
 
-### 3. Intellectual Property
+Create the user database:
 
-All course materials are protected by copyright laws and are the intellectual property of Faisal Memon and EmbarkX. Unauthorized use, reproduction, or distribution of these materials is **strictly prohibited**.
+```sql
+CREATE DATABASE fitness_user_db;
+```
 
-### 4. Reporting Violations
+The user service uses PostgreSQL for JPA persistence. Its current local defaults are:
 
-If you become aware of any unauthorized sharing or distribution of course materials, please report it immediately to [embarkxofficial@gmail.com](mailto:embarkxofficial@gmail.com).
+```text
+Host:     localhost
+Port:     5432
+Database: fitness_user_db
+Username: postgres
+```
 
-### 5. Legal Action
+Do not use the development password from the repository in a shared or production environment.
 
-We reserve the right to take legal action against individuals or entities found to be violating this usage policy.
+### MongoDB
 
-## Thank You
+The services use these databases:
 
-Thank you for respecting these guidelines and helping us maintain the integrity of our course materials.
+- Activity service: `fitnessactivity`
+- AI service: `fitnessrecommendation`
 
-## Contact Information
+MongoDB creates the databases and collections when the services first write data.
 
-- **Email:** [embarkxofficial@gmail.com](mailto:embarkxofficial@gmail.com)
-- **Website:** [www.embarkx.com](http://www.embarkx.com)
+### RabbitMQ
 
+The activity service publishes activity events through the `fitness.exchange` exchange using the `activity.tracking` routing key. The AI service listens on the `activity.queue` queue and creates or updates recommendations.
+
+### Gemini
+
+The AI service reads the Gemini integration values from environment variables:
+
+```powershell
+$env:GEMINI_API_URL = "https://your-gemini-endpoint"
+$env:GEMINI_API_KEY = "your-api-key"
+```
+
+Set these variables in the shell that starts the Config Server or AI service, depending on how your configuration is supplied. Never commit API keys to source control.
+
+### Keycloak
+
+The gateway validates bearer tokens using the Keycloak realm:
+
+```text
+http://localhost:8181/realms/fitness-oauth2
+```
+
+The frontend is configured for:
+
+```text
+Client ID:     oauth2-pkce-client
+Redirect URI:  http://localhost:5173
+Scopes:        openid profile email offline_access
+```
+
+Create a Keycloak realm and client matching these values, or update `fitness-app-frontend/src/authConfig.js` and the gateway configuration for your environment. The client must allow the frontend redirect URI.
+
+## Running the Application
+
+Start the backend services in this order so that configuration and discovery are available before dependent services:
+
+### 1. Start Eureka
+
+```powershell
+cd eureka
+.\mvnw.cmd spring-boot:run
+```
+
+Open the Eureka dashboard at <http://localhost:8761>.
+
+### 2. Start the Config Server
+
+```powershell
+cd configserver
+.\mvnw.cmd spring-boot:run
+```
+
+The Config Server is available at <http://localhost:8888>.
+
+### 3. Start the application services
+
+Open a separate terminal for each service:
+
+```powershell
+cd userservice
+.\mvnw.cmd spring-boot:run
+```
+
+```powershell
+cd activityservice
+.\mvnw.cmd spring-boot:run
+```
+
+```powershell
+cd aiservice
+.\mvnw.cmd spring-boot:run
+```
+
+```powershell
+cd gateway
+.\mvnw.cmd spring-boot:run
+```
+
+### 4. Start the frontend
+
+```powershell
+cd fitness-app-frontend
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173> in a browser.
+
+Useful frontend commands:
+
+```powershell
+npm run lint
+npm run build
+npm run preview
+```
+
+## API Reference
+
+All application API calls should normally go through the gateway at `http://localhost:8080`.
+
+### Users
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/users/register` | Register a user |
+| `GET` | `/api/users/{userId}` | Get a user profile |
+| `GET` | `/api/users/{userId}/validate` | Check whether a user exists |
+
+### Activities
+
+The activity endpoints require the `X-User-ID` header. The frontend adds this header from the authenticated user state.
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/activities` | Track an activity |
+| `GET` | `/api/activities` | List activities for the current user |
+| `GET` | `/api/activities/{activityId}` | Get one activity |
+
+### Recommendations
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/recommendations/user/{userId}` | List recommendations for a user |
+| `GET` | `/api/recommendations/activity/{activityId}` | Get the recommendation for an activity |
+
+All gateway requests must include a valid bearer token issued by the configured Keycloak realm.
+
+## Request Flow
+
+1. The user signs in through Keycloak using the frontend’s PKCE flow.
+2. The frontend stores the access token and sends it as a bearer token to the gateway.
+3. The gateway validates the JWT and forwards the request to the service discovered through Eureka.
+4. The activity service persists the activity in MongoDB and publishes an event to RabbitMQ.
+5. The AI service consumes the event, calls Gemini, and stores the recommendation in MongoDB.
+6. The frontend requests the recommendation through the gateway when viewing activity details.
+
+## Testing
+
+Each Spring Boot service includes a basic application context test. Run a service’s tests with:
+
+```powershell
+cd userservice
+.\mvnw.cmd test
+```
+
+Repeat the command from `activityservice`, `aiservice`, `configserver`, `eureka`, and `gateway` as needed.
+
+Run frontend linting and a production build with:
+
+```powershell
+cd fitness-app-frontend
+npm run lint
+npm run build
+```
+
+## Production Considerations
+
+- Replace all local credentials with secret-managed configuration.
+- Do not commit database, broker, Keycloak, or Gemini secrets.
+- Use HTTPS and update Keycloak issuer/JWK URLs accordingly.
+- Restrict gateway CORS origins to the deployed frontend.
+- Configure durable RabbitMQ resources and production connection credentials.
+- Use managed PostgreSQL and MongoDB instances or secure, persistent deployments.
+- Replace `ddl-auto: update` with an explicit database migration strategy.
+- Add health checks, metrics, centralized logs, and rate limiting before exposing the gateway publicly.
+
+## License and Usage
+
+This repository contains an educational fitness application. Review and comply with the licensing and usage terms that apply to the source materials and all third-party dependencies before redistributing or deploying it.
